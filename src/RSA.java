@@ -7,10 +7,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.io.File;
 import java.io.PrintWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 
 class RSA {
-  static int bitlen = 264;
+  static int bitlen = 100;
   static BigInteger ZERO = BigInteger.ZERO;
   static BigInteger ONE = BigInteger.ONE;
   static BigInteger TWO = BigInteger.TWO;
@@ -19,7 +20,7 @@ class RSA {
   public static void main(String args[]) {
     // Declaracao das variaveis
     BigInteger n, d, e;
-    String MESSAGE = "oi";
+    String MESSAGE = "Teste";
     String CIPHER_MESSAGE = null;
     String DECIPHERED_MESSAGE = null;
     
@@ -91,6 +92,7 @@ class RSA {
     
     System.out.println("guessed_q:");
 
+    // Deve existir uma maneira melhor de fazer essa parte, sem precisar repetir o codigo alguma vezes, o que atrapalha no desempenho
     BigInteger guessed_q = rho(n);
     while(guessed_q.equals(guessed_p)){
       guessed_q = rho(n);
@@ -126,17 +128,20 @@ class RSA {
 
       // key
       keyFile = new File("key.txt");
-      keyWriter = new PrintWriter(keyFile);
-      keyWriter.println(Duration.between(generate_key_start, generate_key_end).toNanos());
+      keyWriter = new PrintWriter(new FileWriter(keyFile,true));
+      keyWriter.print(bitlen + " ");
+      keyWriter.println(Duration.between(generate_key_start, generate_key_end).toMillis());
       
       // cipher
       cipherFile = new File("cipher.txt");
-      cipherWriter = new PrintWriter(cipherFile);
+      cipherWriter = new PrintWriter(new FileWriter(cipherFile,true));
+      cipherWriter.print(bitlen + " ");
       cipherWriter.println(Duration.between(generate_cipher_start, generate_cipher_end).toNanos());
 
       // brute
       bruteFile = new File("brute.txt");
-      bruteWriter = new PrintWriter(bruteFile);
+      bruteWriter = new PrintWriter(new FileWriter(bruteFile,true));
+      bruteWriter.print(bitlen + " ");
       bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toNanos());
     
     } catch(IOException f) {
