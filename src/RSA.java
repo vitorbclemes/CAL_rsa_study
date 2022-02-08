@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.io.IOException;
 
 class RSA {
-  static int bitlen = 256;
+  static int bitlen = 264;
   static BigInteger ZERO = BigInteger.ZERO;
   static BigInteger ONE = BigInteger.ONE;
   static BigInteger TWO = BigInteger.TWO;
@@ -19,7 +19,7 @@ class RSA {
   public static void main(String args[]) {
     // Declaracao das variaveis
     BigInteger n, d, e;
-    String MESSAGE = "Testando algoritimo do trabalho de CAL";
+    String MESSAGE = "oi";
     String CIPHER_MESSAGE = null;
     String DECIPHERED_MESSAGE = null;
     
@@ -76,70 +76,68 @@ class RSA {
     
     
     // Define a mensagem decifrada
-    Instant decipher_start = Instant.now();
     DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(d, n).toByteArray());
     System.out.println("MENSAGEM DECIFRADA:\n" + DECIPHERED_MESSAGE);
-    Instant decipher_end = Instant.now();
 
 
     Instant brute_force_start = Instant.now();
     System.out.println("\n\nTENTANDO BRUTAR A CRIPTOGRAFIA ATRAVES DA FATORACAO EM PRIMOS:");
     System.out.println("Buscando p e q atraves do metodo de Pollard`s Rho...");
     System.out.println("guessed_p:");
-    // Comeca em 2
-    BigInteger guessed_p = rho(n,TWO);
+
+    // Brutando
+    BigInteger guessed_p = rho(n);
     System.out.println(guessed_p);
     
     System.out.println("guessed_q:");
-    // Comeca em p + 1
-    BigInteger guessed_q = rho(n,guessed_p.add(ONE));
+
+    BigInteger guessed_q = rho(n);
+    while(guessed_q.equals(guessed_p)){
+      guessed_q = rho(n);
+    }
     System.out.println(guessed_q);
-
-    System.out.println("\nTendo guessed_q e guessed_p, basta multiplicarmos e temos guessed_d");
-    BigInteger guessed_d = guessed_p.multiply(guessed_q);
-    System.out.println("guessed_d:"+guessed_d);
     
-
+    System.out.println("\nTendo guessed_q e guessed_p, basta encontrarmos guessed_phi");
+    BigInteger guessed_phi = (guessed_p.subtract(ONE)).multiply(guessed_q.subtract(ONE));
+    System.out.println("guessed_phi:"+guessed_phi);
+    
+    // Atraves de euclides estendido, descobrimos guessed_d
+    System.out.println("Agora tendo e (publico) e guessed_phi, sabemos que guessed_d:");
+    BigInteger guessed_d = euclidian_extended(e,guessed_phi);
+    System.out.println(guessed_d);
+    
     System.out.println("\n\nTentando decifrar a mensagem:");
     String GUESSED_DECIPHERED_MESSAGE;
     GUESSED_DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(guessed_d, n).toByteArray());
     System.out.println("MENSAGEM DECIFRADA:\n" + GUESSED_DECIPHERED_MESSAGE);
 
-    System.out.println("Funcionou? --> " + GUESSED_DECIPHERED_MESSAGE == DECIPHERED_MESSAGE);
     Instant brute_force_end = Instant.now();
     
 
     // Escreve os tempos nos arquivos
     File keyFile;
     File cipherFile;
-    File decipherFile;
     File bruteFile;
     
     PrintWriter keyWriter = null;
     PrintWriter cipherWriter = null;
-    PrintWriter decipherWriter = null;
     PrintWriter bruteWriter = null;
     try{
 
       // key
-      keyFile = new File("../results/key.txt");
+      keyFile = new File("key.txt");
       keyWriter = new PrintWriter(keyFile);
-      keyWriter.println(Duration.between(generate_key_start, generate_key_end).toString());
+      keyWriter.println(Duration.between(generate_key_start, generate_key_end).toNanos());
       
       // cipher
-      cipherFile = new File("../results/cipher.txt");
+      cipherFile = new File("cipher.txt");
       cipherWriter = new PrintWriter(cipherFile);
-      cipherWriter.println(Duration.between(generate_cipher_start, generate_cipher_end).toString());
+      cipherWriter.println(Duration.between(generate_cipher_start, generate_cipher_end).toNanos());
 
-      // decipher
-      decipherFile = new File("../results/decipher.txt");
-      decipherWriter = new PrintWriter(decipherFile);
-      decipherWriter.println(Duration.between(decipher_start, decipher_end).toString());
-    
       // brute
-      bruteFile = new File("../results/brute.txt");
+      bruteFile = new File("brute.txt");
       bruteWriter = new PrintWriter(bruteFile);
-      bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toString());
+      bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toNanos());
     
     } catch(IOException f) {
         System.err.println(f);
@@ -150,27 +148,25 @@ class RSA {
     }
  }
 
-
  public static boolean isPrime(BigInteger NUMBER) {
     
     //Metodo nativo do BigInteger,retorna true se ele provavelmente for primo, falso se definitivamente nao for.
     if (!NUMBER.isProbablePrime(5))
-        return false;
+      return false;
 
     // Verifica se é par
     if (!TWO.equals(NUMBER) && ZERO.equals(NUMBER.mod(TWO)))
-        return false;
+      return false;
 
     /*
     Verificacao com Pollard's Rho, porem nao executa em tempo hábil caso o bitlen seja muito grande
-    
-    if(rho(NUMBER,TWO).compareTo(NUMBER)!=0){
-      System.out.println("entrou");
+    if(rho(NUMBER).compareTo(NUMBER)!=0){
       return false;
     };
-    
     */
+    
     // Caso passe em todos os testes
+    
     return true;
   }
 
@@ -201,15 +197,19 @@ class RSA {
   }
 
   // Algoritimo Pollard's Rho, disponivel em https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm 
-  private static BigInteger rho(BigInteger n, BigInteger x) {
-    BigInteger y = x;
-    BigInteger d = BigInteger.ONE;
-    while (d.equals(BigInteger.ONE)) {
-        x = x.modPow(BigInteger.TWO, n).add(BigInteger.ONE);
-        y = y.modPow(BigInteger.TWO, n).add(BigInteger.ONE);
-        y = y.modPow(BigInteger.TWO, n).add(BigInteger.ONE);
-        d = x.subtract(y).abs().gcd(n);
-    }
-    return d;
-}
+  private static BigInteger rho(BigInteger n) {
+    BigInteger divisor;
+    BigInteger c  = new BigInteger(n.bitLength(), secureRandom);
+    BigInteger x  = new BigInteger(n.bitLength(), secureRandom);
+    BigInteger xx = x;
+
+    do {
+        x  =  x.multiply(x).mod(n).add(c).mod(n);
+        xx = xx.multiply(xx).mod(n).add(c).mod(n);
+        xx = xx.multiply(xx).mod(n).add(c).mod(n);
+        divisor = x.subtract(xx).gcd(n);
+    } while((divisor.compareTo(ONE)) == 0);
+    
+    return divisor;
+  }
 }
