@@ -1,3 +1,4 @@
+package src;
 // Funcao adaptada da versão do algoritimo RSA disponivel em https://pt.wikipedia.org/wiki/RSA_(sistema_criptogr%C3%A1fico)
 // Documentação do BigInteger para conferência disponível em https://docs.oracle.com/javase/7/docs/api/java/math/BigInteger.html
 import java.math.BigInteger;
@@ -120,27 +121,27 @@ class RSA {
     try{
 
       // key
-      keyFile = new File("key.txt");
+      keyFile = new File("../results/key.txt");
       keyWriter = new PrintWriter(keyFile);
       keyWriter.println(Duration.between(generate_key_start, generate_key_end).toString());
       
       // cipher
-      cipherFile = new File("cipher.txt");
+      cipherFile = new File("../results/cipher.txt");
       cipherWriter = new PrintWriter(cipherFile);
       cipherWriter.println(Duration.between(generate_cipher_start, generate_cipher_end).toString());
 
       // decipher
-      decipherFile = new File("decipher.txt");
+      decipherFile = new File("../results/decipher.txt");
       decipherWriter = new PrintWriter(decipherFile);
       decipherWriter.println(Duration.between(decipher_start, decipher_end).toString());
     
       // brute
-      bruteFile = new File("brute.txt");
+      bruteFile = new File("../results/brute.txt");
       bruteWriter = new PrintWriter(bruteFile);
       bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toString());
     
     } catch(IOException f) {
-        System.out.println(f);
+        System.err.println(f);
     } finally {
         if (keyWriter!=null) keyWriter.close();
         if (cipherWriter!=null) cipherWriter.close();
