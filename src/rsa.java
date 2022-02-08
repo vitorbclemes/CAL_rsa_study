@@ -56,6 +56,7 @@ class RSA {
 
     Instant generate_key_end = Instant.now();
     
+    System.out.println("Bits: " + bitlen);
     System.out.println("Chave Publica (n,e)");
     System.out.println("n:"+n);
     System.out.println("e:"+e);
@@ -108,7 +109,7 @@ class RSA {
     Instant brute_force_end = Instant.now();
     
 
-    // file area
+    // Escreve os tempos nos arquivos
     File keyFile;
     File cipherFile;
     File decipherFile;
