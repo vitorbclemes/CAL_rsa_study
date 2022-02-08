@@ -28,7 +28,6 @@ class RSA {
       O construtor new Biginter(bitLenght,certainty,rnd) gera um numero PROVAVELMENTE primo, 
       onde essa probabilidade é de ( 1 - 1/2 ^ certainty)
     */
-    Instant generate_key_start = Instant.now();
     BigInteger p = new BigInteger(bitlen /2, 100, secureRandom); 
     BigInteger q = new BigInteger(bitlen /2, 100, secureRandom); 
 
@@ -55,7 +54,6 @@ class RSA {
     // d deve ser o inverso multiplicativo de "e"
     d = euclidian_extended(e,phi);
 
-    Instant generate_key_end = Instant.now();
     
     System.out.println("Bits: " + bitlen);
     System.out.println("Chave Publica (n,e)");
@@ -70,10 +68,8 @@ class RSA {
     
     
     // Define a mensagem cifrada
-    Instant generate_cipher_start = Instant.now();
     CIPHER_MESSAGE = new BigInteger(MESSAGE.getBytes()).modPow(e, n).toString();
     System.out.println("MENSAGEM CIFRADA:\n"+ CIPHER_MESSAGE);
-    Instant generate_cipher_end = Instant.now();
     
     
     // Define a mensagem decifrada
@@ -117,38 +113,19 @@ class RSA {
     
 
     // Escreve os tempos nos arquivos
-    File keyFile;
-    File cipherFile;
     File bruteFile;
     
-    PrintWriter keyWriter = null;
-    PrintWriter cipherWriter = null;
     PrintWriter bruteWriter = null;
     try{
-
-      // key
-      keyFile = new File("key.txt");
-      keyWriter = new PrintWriter(new FileWriter(keyFile,true));
-      keyWriter.print(bitlen + " ");
-      keyWriter.println(Duration.between(generate_key_start, generate_key_end).toMillis());
-      
-      // cipher
-      cipherFile = new File("cipher.txt");
-      cipherWriter = new PrintWriter(new FileWriter(cipherFile,true));
-      cipherWriter.print(bitlen + " ");
-      cipherWriter.println(Duration.between(generate_cipher_start, generate_cipher_end).toNanos());
-
       // brute
       bruteFile = new File("brute.txt");
       bruteWriter = new PrintWriter(new FileWriter(bruteFile,true));
       bruteWriter.print(bitlen + " ");
-      bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toNanos());
+      bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toMillis());
     
     } catch(IOException f) {
         System.err.println(f);
     } finally {
-        if (keyWriter!=null) keyWriter.close();
-        if (cipherWriter!=null) cipherWriter.close();
         if (bruteWriter!=null) bruteWriter.close();
     }
  }
