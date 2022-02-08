@@ -19,7 +19,7 @@ class RSA {
   public static void main(String args[]) {
     // Declaracao das variaveis
     BigInteger n, d, e;
-    String MESSAGE = "Posso escrever qlq coisa aq";
+    String MESSAGE = "Testando algoritimo do trabalho de CAL";
     String CIPHER_MESSAGE = null;
     String DECIPHERED_MESSAGE = null;
     
@@ -83,24 +83,24 @@ class RSA {
 
 
     Instant brute_force_start = Instant.now();
-    System.out.println("TENTANDO BRUTAR A CRIPTOGRAFIA ATRAVES DA FATORACAO EM PRIMOS:");
+    System.out.println("\n\nTENTANDO BRUTAR A CRIPTOGRAFIA ATRAVES DA FATORACAO EM PRIMOS:");
     System.out.println("Buscando p e q atraves do metodo de Pollard`s Rho...");
-    System.out.println("\nguessed_p:");
+    System.out.println("guessed_p:");
     // Comeca em 2
     BigInteger guessed_p = rho(n,TWO);
     System.out.println(guessed_p);
     
-    System.out.println("\nguessed_q:");
+    System.out.println("guessed_q:");
     // Comeca em p + 1
     BigInteger guessed_q = rho(n,guessed_p.add(ONE));
     System.out.println(guessed_q);
 
-    System.out.println("Tendo guessed_q e guessed_p, basta multiplicarmos e temos guessed_d");
+    System.out.println("\nTendo guessed_q e guessed_p, basta multiplicarmos e temos guessed_d");
     BigInteger guessed_d = guessed_p.multiply(guessed_q);
     System.out.println("guessed_d:"+guessed_d);
     
 
-    System.out.println("Tentando decifrar a mensagem:");
+    System.out.println("\n\nTentando decifrar a mensagem:");
     String GUESSED_DECIPHERED_MESSAGE;
     GUESSED_DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(guessed_d, n).toByteArray());
     System.out.println("MENSAGEM DECIFRADA:\n" + GUESSED_DECIPHERED_MESSAGE);
