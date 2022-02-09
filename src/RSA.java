@@ -1,5 +1,5 @@
 package src;
-// Funcao adaptada da versão do algoritimo RSA disponivel em https://pt.wikipedia.org/wiki/RSA_(sistema_criptogr%C3%A1fico)
+// Algorítimo adaptada da versão do algoritimo RSA disponivel em https://pt.wikipedia.org/wiki/RSA_(sistema_criptogr%C3%A1fico)
 // Documentação do BigInteger para conferência disponível em https://docs.oracle.com/javase/7/docs/api/java/math/BigInteger.html
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -11,142 +11,142 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 class RSA {
-  static int bitlen = 80;
-  static BigInteger ZERO = BigInteger.ZERO;
-  static BigInteger ONE = BigInteger.ONE;
-  static BigInteger TWO = BigInteger.TWO;
-  static SecureRandom secureRandom = new SecureRandom();
+  // Declaracao das variaveis
+  private BigInteger ZERO = BigInteger.ZERO;
+  private BigInteger ONE = BigInteger.ONE;
+  private BigInteger TWO = BigInteger.TWO;
+  private SecureRandom secureRandom = new SecureRandom();
+  
+  int bitlen;
+  String MESSAGE;
+  String CIPHER_MESSAGE = null;
+  String DECIPHERED_MESSAGE = null;
+  
+  BigInteger n, d, e;
+  BigInteger p,q;
+  BigInteger phi;
+  
+  BigInteger guessed_p,guessed_q;
+  BigInteger guessed_phi,guessed_d;
+  String GUESSED_DECIPHERED_MESSAGE;
 
-  public static void main(String args[]) {
-    // Declaracao das variaveis
-    BigInteger n, d, e;
-    String MESSAGE = "Teste";
-    String CIPHER_MESSAGE = null;
-    String DECIPHERED_MESSAGE = null;
+  // define os valores padroes
+  public RSA(int bits,String message) {
+    this.MESSAGE = message;
+    this.bitlen = bits;
+  }
+
+  public void start(){
     
+    //Gera as chaves
+    generateKey();
+    
+    // Define a mensagem cifrada
+    cipher_message();
+    // Define a mensagem decifrada
+    decipher_message();
+
+    // Quebra a criptografia
+    brute_force();
+
+    // Exibe log no console
+    printResults();
+ }
+
+  private void generateKey(){
+    Instant start_keyGen,end_keyGen;
+    Instant start_prime_validation,end_prime_validation;
     /*
       O construtor new Biginter(bitLenght,certainty,rnd) gera um numero PROVAVELMENTE primo, 
       onde essa probabilidade é de ( 1 - 1/2 ^ certainty)
     */
-    BigInteger p = new BigInteger(bitlen /2, 100, secureRandom); 
-    BigInteger q = new BigInteger(bitlen /2, 100, secureRandom); 
+    start_keyGen = Instant.now();
+    this.p = new BigInteger(bitlen /2, 100, secureRandom); 
+    this.q = new BigInteger(bitlen /2, 100, secureRandom); 
+
 
     // Teste de primalidade polinomial
-    while(!isPrime(p) || !isPrime(q)){
-      p = new BigInteger(bitlen / 2, 100, secureRandom);
-      q = new BigInteger(bitlen / 2, 100, secureRandom);
-    }
+    start_prime_validation = Instant.now();
+    while(!isPrime(p))
+      this.p = new BigInteger(bitlen / 2, 100, secureRandom);
     
+    while(!isPrime(q))
+      this.q = new BigInteger(bitlen / 2, 100, secureRandom);
+    end_prime_validation = Instant.now();
+
     // Valor de n = pq
-    n = p.multiply(q);
+    this.n = p.multiply(q);
 
     // Função Totiente de Euler phi(n) = (p-1) * (q-1)
-    BigInteger phi = (p.subtract(ONE)).multiply(q.subtract(ONE));
+    this.phi = (this.p.subtract(ONE)).multiply(this.q.subtract(ONE));
 
     /*
       "e" pertencente aos inteiros, 
       1 < "e" < phi(n),
       "e" e phi(n) sao primos entre si,ou seja, MDC(e,phi(n)) = {1};
     */
-    e = new BigInteger("3");
-    while(phi.gcd(e).intValue() > 1) e = e.add(TWO);
+    this.e = new BigInteger("3");
+    while(phi.gcd(e).intValue() > 1) this.e = this.e.add(TWO);
 
     // d deve ser o inverso multiplicativo de "e"
-    d = euclidian_extended(e,phi);
+    this.d = euclidian_extended(this.e,this.phi);
+    end_keyGen = Instant.now();
 
-    d = e.modInverse(phi);
+    writeOnFileInMillis(new File("keyGen.txt"), start_keyGen, end_keyGen);
+    writeOnFileInMillis(new File("primeValidation.txt"), start_prime_validation, end_prime_validation);
+  }
+
+  private void brute_force(){
+    Instant brute_force_start;
+    Instant brute_force_end;
+
+    brute_force_start = Instant.now(); // temporizador
+    this.guessed_p = rho(n);
+    this.guessed_q = this.n.divide(this.guessed_p);
+    this.guessed_phi = (guessed_p.subtract(ONE)).multiply(guessed_q.subtract(ONE));
+    this.guessed_d = euclidian_extended(e,guessed_phi);
+    this.GUESSED_DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(guessed_d, n).toByteArray());
+    brute_force_end = Instant.now(); // temporizador
     
-    System.out.println("Bits: " + bitlen);
-    System.out.println("Chave Publica (n,e)");
-    System.out.println("n:"+n);
-    System.out.println("e:"+e);
-    System.out.println();
-    System.out.println("Chave Privada (p,q,d)");
-    System.out.println("p:"+p);
-    System.out.println("q:"+q);
-    System.out.println("d:"+d);
-    System.out.println();
-    
-    
-    // Define a mensagem cifrada
-    CIPHER_MESSAGE = new BigInteger(MESSAGE.getBytes()).modPow(e, n).toString();
-    System.out.println("MENSAGEM CIFRADA:\n"+ CIPHER_MESSAGE);
-    
-    // Define a mensagem decifrada
+    // Escreve no arquivo
+    writeOnFileInMillis(new File("brute.txt"),brute_force_start,brute_force_end);
+  }
+
+  private void cipher_message(){
+    Instant start_cipher,end_cipher;
+    start_cipher = Instant.now();
+    this.CIPHER_MESSAGE = new BigInteger(this.MESSAGE.getBytes()).modPow(e, n).toString();
+    end_cipher = Instant.now();
+
+    writeOnFileInNanos(new File("cipher.txt"), start_cipher, end_cipher);
+  }
+
+  private void decipher_message(){
+    Instant start_decipher,end_decipher;
+    start_decipher = Instant.now();
     DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(d, n).toByteArray());
-    System.out.println("MENSAGEM DECIFRADA:\n" + DECIPHERED_MESSAGE);
+    end_decipher = Instant.now();
+    writeOnFileInNanos(new File("decipher.txt"), start_decipher, end_decipher);
+  }
 
-
-    Instant brute_force_start = Instant.now();
-    System.out.println("\n\nTENTANDO BRUTAR A CRIPTOGRAFIA ATRAVES DA FATORACAO EM PRIMOS:");
-    System.out.println("Buscando p e q atraves do metodo de Pollard`s Rho...");
-    System.out.println("guessed_p:");
-
-    // Brutando
-    BigInteger guessed_p = rho(n);
-    System.out.println(guessed_p);
-    System.out.println("guessed_q:");
-    
-    BigInteger guessed_q = n.divide(guessed_p);
-    System.out.println(guessed_q);
-    
-    System.out.println("\nTendo guessed_q e guessed_p, basta encontrarmos guessed_phi");
-    BigInteger guessed_phi = (guessed_p.subtract(ONE)).multiply(guessed_q.subtract(ONE));
-    System.out.println("guessed_phi:"+guessed_phi);
-    
-    // Atraves de euclides estendido, descobrimos guessed_d
-    System.out.println("Agora tendo e (publico) e guessed_phi, sabemos que guessed_d:");
-    BigInteger guessed_d = euclidian_extended(e,guessed_phi);
-    System.out.println(guessed_d);
-    
-    System.out.println("\n\nTentando decifrar a mensagem:");
-    String GUESSED_DECIPHERED_MESSAGE;
-    GUESSED_DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(guessed_d, n).toByteArray());
-    System.out.println("MENSAGEM DECIFRADA:\n" + GUESSED_DECIPHERED_MESSAGE);
-
-    Instant brute_force_end = Instant.now();
-    
-
-    // Escreve os tempos nos arquivos
-    File bruteFile;
-    
-    PrintWriter bruteWriter = null;
-    try{
-      // brute
-      bruteFile = new File("brute.txt");
-      bruteWriter = new PrintWriter(new FileWriter(bruteFile,true));
-      bruteWriter.print(bitlen + " ");
-      bruteWriter.println(Duration.between(brute_force_start, brute_force_end).toMillis());
-    
-    } catch(IOException f) {
-        System.err.println(f);
-    } finally {
-        if (bruteWriter!=null) bruteWriter.close();
-    }
- }
-
- public static boolean isPrime(BigInteger NUMBER) {
-    
+  public  boolean isPrime(BigInteger NUMBER) {
     //Metodo nativo do BigInteger,retorna true se ele provavelmente for primo, falso se definitivamente nao for.
-    if (!NUMBER.isProbablePrime(5))
+    if (!NUMBER.isProbablePrime(100))
       return false;
 
     // Verifica se é par
     if (!TWO.equals(NUMBER) && ZERO.equals(NUMBER.mod(TWO)))
       return false;
 
-    /*
-    Verificacao com Pollard's Rho, porem nao executa em tempo hábil caso o bitlen seja muito grande
-    if(rho(number).compareTo(BigInteger(NUMBER))!=0){
+    // Verificacao com Pollard's Rho
+    if(rho(NUMBER).compareTo(NUMBER)!=0){
       return false;
     }
-    */
-
     return true;
   }
 
   // Algoritimo de euclides estendido
-  public static BigInteger euclidian_extended(BigInteger e,BigInteger phi) {
+  public  BigInteger euclidian_extended(BigInteger e,BigInteger phi) {
     BigInteger d_old = ZERO;
     BigInteger r_old = phi;
     BigInteger d_new = ONE;
@@ -171,7 +171,7 @@ class RSA {
   }
 
   // Algoritimo Pollard's Rho, disponivel em https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm 
-  private static BigInteger rho(BigInteger n) {
+  private  BigInteger rho(BigInteger n) {
     BigInteger divisor;
     BigInteger c  = new BigInteger(n.bitLength(), secureRandom);
     BigInteger x  = new BigInteger(n.bitLength(), secureRandom);
@@ -184,5 +184,58 @@ class RSA {
         divisor = x.subtract(xx).gcd(n);
     } while((divisor.compareTo(ONE)) == 0);
     return divisor;
+  }
+
+  private void writeOnFileInMillis(File file,Instant start,Instant stop){
+    PrintWriter printWriter = null;
+    try{
+      printWriter = new PrintWriter(new FileWriter(file,true));
+      printWriter.print(bitlen + " ");
+      printWriter.println(Duration.between(start, stop).toMillis());
+    
+    } catch(IOException f) {
+        System.err.println(f);
+    } finally {
+        if (printWriter!=null) printWriter.close();
+    }
+  }
+
+  private void writeOnFileInNanos(File file,Instant start,Instant stop){
+    PrintWriter printWriter = null;
+    try{
+      printWriter = new PrintWriter(new FileWriter(file,true));
+      printWriter.print(bitlen + " ");
+      printWriter.println(Duration.between(start, stop).toNanos());
+    
+    } catch(IOException f) {
+        System.err.println(f);
+    } finally {
+        if (printWriter!=null) printWriter.close();
+    }
+  }
+
+  private void printResults(){
+    System.out.println("Bitlen: " + this.bitlen);
+    System.out.println("Mensagem: " + this.MESSAGE);
+
+    System.out.println("\nChave Publica(n,e):");
+    System.out.println("n:" + this.n);
+    System.out.println("e:" + this.e);
+
+    System.out.println("\nChave Privada(p,q,d");
+    System.out.println("p:" + this.p);
+    System.out.println("q:" + this.q);
+    System.out.println("d:" + this.d);
+
+    System.out.println("\nUtilizando as chaves...");
+    System.out.println("Mensagem cifrada: " + this.CIPHER_MESSAGE);
+    System.out.println("Mensagem decifrada: " +this.DECIPHERED_MESSAGE);
+
+    System.out.println("\nBrutando os valores...");
+    System.out.println("q descoberto:" + this.guessed_q);
+    System.out.println("p descoberto:" + this.guessed_p);
+    System.out.println("d descoberto:" + this.guessed_d);
+    System.out.println("Mensagem decifrada pelo brute:" +this.GUESSED_DECIPHERED_MESSAGE);
+    System.out.println("------------------------------------------------------");
   }
 }
