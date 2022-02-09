@@ -14,7 +14,7 @@ cd src; python3 script.py
 4)Os graficos serao plotados na pasta "graphs"
 
 # Ambiente:
-Ubuntu 20.04 Lts
+Ubuntu 20.04 Lts - 
 Visual Studio Code
 
 openjdk 16.0.1 2021-04-20
