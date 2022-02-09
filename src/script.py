@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import os
-
-path = os.path.abspath(__file__)
   
 bitlen = []
 time = []

@@ -11,7 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 class RSA {
-  static int bitlen = 100;
+  static int bitlen = 80;
   static BigInteger ZERO = BigInteger.ZERO;
   static BigInteger ONE = BigInteger.ONE;
   static BigInteger TWO = BigInteger.TWO;
@@ -54,6 +54,7 @@ class RSA {
     // d deve ser o inverso multiplicativo de "e"
     d = euclidian_extended(e,phi);
 
+    d = e.modInverse(phi);
     
     System.out.println("Bits: " + bitlen);
     System.out.println("Chave Publica (n,e)");
@@ -71,7 +72,6 @@ class RSA {
     CIPHER_MESSAGE = new BigInteger(MESSAGE.getBytes()).modPow(e, n).toString();
     System.out.println("MENSAGEM CIFRADA:\n"+ CIPHER_MESSAGE);
     
-    
     // Define a mensagem decifrada
     DECIPHERED_MESSAGE = new String(new BigInteger(CIPHER_MESSAGE).modPow(d, n).toByteArray());
     System.out.println("MENSAGEM DECIFRADA:\n" + DECIPHERED_MESSAGE);
@@ -85,14 +85,9 @@ class RSA {
     // Brutando
     BigInteger guessed_p = rho(n);
     System.out.println(guessed_p);
-    
     System.out.println("guessed_q:");
-
-    // Deve existir uma maneira melhor de fazer essa parte, sem precisar repetir o codigo alguma vezes, o que atrapalha no desempenho
-    BigInteger guessed_q = rho(n);
-    while(guessed_q.equals(guessed_p)){
-      guessed_q = rho(n);
-    }
+    
+    BigInteger guessed_q = n.divide(guessed_p);
     System.out.println(guessed_q);
     
     System.out.println("\nTendo guessed_q e guessed_p, basta encontrarmos guessed_phi");
@@ -142,13 +137,11 @@ class RSA {
 
     /*
     Verificacao com Pollard's Rho, porem nao executa em tempo hábil caso o bitlen seja muito grande
-    if(rho(NUMBER).compareTo(NUMBER)!=0){
+    if(rho(number).compareTo(BigInteger(NUMBER))!=0){
       return false;
-    };
+    }
     */
-    
-    // Caso passe em todos os testes
-    
+
     return true;
   }
 
@@ -174,7 +167,6 @@ class RSA {
       r_old = aux_rnew;
       r_new = aux_rold.subtract(a.multiply(aux_rnew));
     }
-    
     return d_old.mod(phi);
   }
 
@@ -191,7 +183,6 @@ class RSA {
         xx = xx.multiply(xx).mod(n).add(c).mod(n);
         divisor = x.subtract(xx).gcd(n);
     } while((divisor.compareTo(ONE)) == 0);
-    
     return divisor;
   }
 }
